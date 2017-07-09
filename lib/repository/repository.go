@@ -59,6 +59,13 @@ func visitRepositoryFile(repo vcs.Repo, basePath string, path string, info os.Fi
 	return nil
 }
 
+//func getLocalDirectoryName(repo vcs.Repo) {
+//	localRepositoryDir, _ := ioutil.TempDir("", "gofortune")
+//
+//
+//
+//}
+
 func getLocalFileName(repo vcs.Repo, fileName string) string {
 	parserdUrl, err := url.Parse(repo.Remote())
 	if err != nil {
@@ -70,7 +77,12 @@ func getLocalFileName(repo vcs.Repo, fileName string) string {
 		panic(err)
 	}
 
-	return fmt.Sprintf("%s_%s_%s", string(repo.Vcs()), acceptableHostName, fileName)
+	acceptablePath, err := removeNonAcceptableChars(parserdUrl.Path)
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf("%s%s_%s", acceptableHostName, acceptablePath, fileName)
 }
 
 func removeNonAcceptableChars(input string) (string, error) {
@@ -78,7 +90,7 @@ func removeNonAcceptableChars(input string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return reg.ReplaceAllString(input, ""), nil
+	return reg.ReplaceAllString(input, "_"), nil
 }
 
 func cloneRepositoryIntoTemp(remote string) (vcs.Repo, string, error) {

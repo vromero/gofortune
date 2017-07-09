@@ -103,7 +103,7 @@ func fortuneRun(request FortuneRequest) (err error) {
 
 	if request.Match != "" {
 		fortune.MatchFortunes(rootFsDescriptor, request.Match, func(input string) {
-			fmt.Println(input)
+			printFortune(request, filepath.Base(rootFsDescriptor.Path), input)
 			fmt.Println("%")
 		})
 		os.Exit(0)
@@ -136,11 +136,7 @@ func printRandomFortune(request FortuneRequest, rootFsDescriptor fortune.FileSys
 	}
 	fileName, fortuneData, _ = fortune.GetFilteredRandomFortune(rootFsDescriptor, filter)
 
-	if request.ShowCookieFile {
-		fmt.Printf("(%s)\n%%\n", fileName)
-	}
-
-	fmt.Println(fortuneData)
+	printFortune(request, fileName, fortuneData)
 	return len(fortuneData)
 }
 
@@ -149,6 +145,15 @@ func printRandomFortune(request FortuneRequest, rootFsDescriptor fortune.FileSys
 func readTimeWait(length int) {
 	timeWait := lib.Max(uint32(length/charsPerSec), uint32(minimumWaitSeconds))
 	time.Sleep(time.Second * time.Duration(timeWait))
+}
+
+
+func printFortune(request FortuneRequest, fileName string, fortuneData string) {
+	if request.ShowCookieFile {
+		fmt.Printf("(%s)\n%%\n", fileName)
+	}
+
+	fmt.Println(fortuneData)
 }
 
 // Print out the list of directories and files, including its possibilities data.
