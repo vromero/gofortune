@@ -17,8 +17,6 @@ func main() {
 // be altered to honor the original syntax.
 func processAliases() {
 	switch getExecutableName() {
-	case "fortune":
-		os.Args = append([]string{"gofortune", "fortune"}, os.Args[1:]...)
 	case "strfile":
 		os.Args = append([]string{"gofortune", "strfile"}, os.Args[1:]...)
 	}

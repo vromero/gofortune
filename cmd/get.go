@@ -50,7 +50,7 @@ func visitFile(basePath string, path string, info os.FileInfo, err error) error 
 		return nil
 	}
 	relPath, err := filepath.Rel(basePath, path)
-	if (err != nil) {
+	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
