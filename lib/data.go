@@ -6,9 +6,13 @@ import (
 	"os"
 )
 
+var (
+	maxDataSize = 4096
+)
+
 // Reads a whole fortune from the fortune base file
 func ReadData(inputFile *os.File, pos int64) (string, error) {
-	buffer := make([]byte, 512)
+	buffer := make([]byte, maxDataSize)
 	_, err := inputFile.ReadAt(buffer, pos)
 	if err != nil {
 		return "", err
