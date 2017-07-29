@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"os"
+	"io"
 )
 
 var (
@@ -14,7 +15,7 @@ var (
 func ReadData(inputFile *os.File, pos int64) (string, error) {
 	buffer := make([]byte, maxDataSize)
 	_, err := inputFile.ReadAt(buffer, pos)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return "", err
 	}
 
