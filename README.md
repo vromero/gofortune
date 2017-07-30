@@ -27,3 +27,8 @@ This project adheres to the Contributor Covenant code of conduct. By participati
  
 `gofortune strfile` will create a random access index file for storing strings.
 
+## I18n
+
+When any of the LANG variables are present in unix systems or language configuration is present in Windows systems;
+if called without argument it will choose (if they exist) fortunes in the default fortunes directory appending
+the language (i.e: `/usr/share/games/fortunes/es` and `/usr/share/games/fortunes/off/es` in unix with LC_ALL=es_ES)/.

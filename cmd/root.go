@@ -14,6 +14,7 @@ import (
 
 	"github.com/gofortune/gofortune/lib"
 	"strconv"
+	"github.com/patrickdappollonio/localized"
 )
 
 var cfgFile string
@@ -98,11 +99,27 @@ func initConfig() {
 	}
 }
 
+// fortunePrepareRequest setups fortuneRequest.Paths and fortuneRequest.OffensivePaths taking
+// into consideration user input and environmental language information
 func fortunePrepareRequest(args []string) {
 	if len(args) == 0 {
-		fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: defaultFortunePath}}
-		fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: defaultOffensiveFortunePath}}
+		// If no arguments are passed, localizedDefaultFortunePath / environment language will be tried, if they
+		// don't exist the regular ones will be tried
+		lang := localized.New()
+		errLangDetection := lang.Detect()
+
+		localizedDefaultFortunePath := filepath.Join(defaultFortunePath, lang.Lang)
+		localizedDefaultOffensiveFortunePath := filepath.Join(defaultOffensiveFortunePath, lang.Lang)
+		if errLangDetection == nil && (lib.FileExists(localizedDefaultFortunePath) ||
+			lib.FileExists(localizedDefaultOffensiveFortunePath)) {
+			fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: localizedDefaultFortunePath}}
+			fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: localizedDefaultOffensiveFortunePath}}
+		} else {
+			fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: defaultFortunePath}}
+			fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: defaultOffensiveFortunePath}}
+		}
 	} else {
+		// If arguments are passed those will be used as directories. They may contain specific probabilities.
 		currentPath := fortune.ProbabilityPath{}
 		for i := range args {
 			if strings.HasSuffix(args[i], "%") {

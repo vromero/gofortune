@@ -18,7 +18,8 @@ GOTOOLS := \
 	github.com/inconshreveable/mousetrap \
 	github.com/spf13/viper \
 	github.com/mitchellh/go-homedir \
-	github.com/Masterminds/vcs
+	github.com/Masterminds/vcs \
+	github.com/patrickdappollonio/localized
 
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
