@@ -10,11 +10,10 @@ import (
 	"github.com/gofortune/gofortune/lib/fortune"
 	"time"
 	"path/filepath"
-	"strings"
-
 	"github.com/gofortune/gofortune/lib"
-	"strconv"
 	"github.com/patrickdappollonio/localized"
+	"strings"
+	"strconv"
 )
 
 var cfgFile string
@@ -37,7 +36,6 @@ var (
 	minimumWaitSeconds          = 6
 	charsPerSec                 = 20
 )
-
 
 var RootCmd = &cobra.Command{
 	Use:   "gofortune",
@@ -107,17 +105,15 @@ func fortunePrepareRequest(args []string) {
 		// don't exist the regular ones will be tried
 		lang := localized.New()
 		errLangDetection := lang.Detect()
-
-		localizedDefaultFortunePath := filepath.Join(defaultFortunePath, lang.Lang)
-		localizedDefaultOffensiveFortunePath := filepath.Join(defaultOffensiveFortunePath, lang.Lang)
-		if errLangDetection == nil && (lib.FileExists(localizedDefaultFortunePath) ||
-			lib.FileExists(localizedDefaultOffensiveFortunePath)) {
-			fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: localizedDefaultFortunePath}}
-			fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: localizedDefaultOffensiveFortunePath}}
-		} else {
-			fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: defaultFortunePath}}
-			fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: defaultOffensiveFortunePath}}
+		var localizedDefaultFortunePath string
+		var localizedDefaultOffensiveFortunePath string
+		if errLangDetection == nil {
+			localizedDefaultFortunePath = filepath.Join(defaultFortunePath, lang.Lang)
+			localizedDefaultOffensiveFortunePath = filepath.Join(defaultOffensiveFortunePath, lang.Lang)
 		}
+
+		fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: selectExisting(defaultFortunePath, localizedDefaultFortunePath)}}
+		fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: selectExisting(defaultOffensiveFortunePath, localizedDefaultOffensiveFortunePath)}}
 	} else {
 		// If arguments are passed those will be used as directories. They may contain specific probabilities.
 		currentPath := fortune.ProbabilityPath{}
@@ -136,6 +132,14 @@ func fortunePrepareRequest(args []string) {
 	}
 }
 
+// selectExisting selects the first existing path of the two paths passed
+func selectExisting(path1 string, path2 string) string {
+	if path2 == "" || ! lib.FileExists(path2) {
+		return path1
+	}
+	return path2
+}
+
 // fortuneRun executes fortune cookie operation requested in a FortuneRequest instance
 func fortuneRun(request FortuneRequest) (err error) {
 	input := []fortune.ProbabilityPath{}
@@ -150,7 +154,6 @@ func fortuneRun(request FortuneRequest) (err error) {
 	}
 
 	rootFsDescriptor, err := fortune.LoadPaths(input)
-
 	if request.Match != "" {
 		matchedFortunes := fortune.MatchFortunes(rootFsDescriptor, request.Match, request.IgnoreCase)
 		printFortuneChannel(request, matchedFortunes)
@@ -180,7 +183,7 @@ func printRandomFortune(request FortuneRequest, rootFsDescriptor fortune.FileSys
 	printFortuneChannel(request, output)
 }
 
-func printFortuneChannel(request FortuneRequest, fortuneChannel <- chan fortune.FortuneData) {
+func printFortuneChannel(request FortuneRequest, fortuneChannel <-chan fortune.FortuneData) {
 	for fortuneData := range fortuneChannel {
 		if request.ShowCookieFile {
 			fmt.Printf("(%s)\n%%\n", fortuneData.FileName)
