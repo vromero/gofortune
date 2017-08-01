@@ -35,13 +35,15 @@ type FileSystemNodeDescriptor struct {
 // LoadPaths Loads the paths described in the paths arguments returning
 // a FileSystemNodeDescriptor that includes extra information as the Table and
 // all the children (if a directory is passed).
-func LoadPaths(paths []ProbabilityPath) (FileSystemNodeDescriptor, error) {
+// LoadPaths can filter fortune files by the shortest or longest dictum it has.
+// This is useful to prevent infinite loops.
+func LoadPaths(paths []ProbabilityPath, shorterThan uint32, longerThan uint32) (FileSystemNodeDescriptor, error) {
 	rootFsDescriptor := FileSystemNodeDescriptor{
 		Percent: 100,
 	}
 
 	for i := range paths {
-		err := loadPath(paths[i], &rootFsDescriptor)
+		err := loadPath(paths[i], &rootFsDescriptor, shorterThan, longerThan)
 		if err != nil {
 			return rootFsDescriptor, err
 		}
@@ -49,7 +51,7 @@ func LoadPaths(paths []ProbabilityPath) (FileSystemNodeDescriptor, error) {
 	return rootFsDescriptor, nil
 }
 
-func loadPath(path ProbabilityPath, parent *FileSystemNodeDescriptor) (err error) {
+func loadPath(path ProbabilityPath, parent *FileSystemNodeDescriptor, shorterThan uint32, longerThan uint32) (err error) {
 	fsDescriptor := FileSystemNodeDescriptor{
 		Path:    path.Path,
 		Percent: path.Percentage,
@@ -58,12 +60,12 @@ func loadPath(path ProbabilityPath, parent *FileSystemNodeDescriptor) (err error
 
 	stat, err := os.Stat(path.Path)
 	if stat.IsDir() {
-		err = loadDirPath(&fsDescriptor, parent)
+		err = loadDirPath(&fsDescriptor, parent, shorterThan, longerThan)
 		if err != nil {
 			return err
 		}
 	} else {
-		err = loadFilePath(&fsDescriptor, parent)
+		err = loadFilePath(&fsDescriptor, parent, shorterThan, longerThan)
 		if err != nil {
 			return err
 		}
@@ -71,7 +73,7 @@ func loadPath(path ProbabilityPath, parent *FileSystemNodeDescriptor) (err error
 	return nil
 }
 
-func loadDirPath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeDescriptor) error {
+func loadDirPath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeDescriptor, shorterThan uint32, longerThan uint32) error {
 	fsNodes, err := ioutil.ReadDir(fsDescriptor.Path)
 	if err != nil {
 		return err
@@ -87,7 +89,7 @@ func loadDirPath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeD
 			}
 
 			// Files that are invalid will be ignored
-			_ = loadFilePath(&childFsDescriptor, fsDescriptor)
+			_ = loadFilePath(&childFsDescriptor, fsDescriptor, shorterThan, longerThan)
 		}
 	}
 
@@ -96,7 +98,7 @@ func loadDirPath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeD
 	return nil
 }
 
-func loadFilePath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeDescriptor) error {
+func loadFilePath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeDescriptor, shorterThan uint32, longerThan uint32) error {
 	if !isFortuneFile(fsDescriptor.Path) {
 		return errors.New("File is not a valid fortune file")
 	}
@@ -110,6 +112,10 @@ func loadFilePath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNode
 	table, err := lib.LoadDataTableFromPath(fsDescriptor.IndexPath)
 	if err != nil {
 		return err
+	}
+
+	if table.LongestLength < longerThan || table.ShortestLength > shorterThan {
+		return errors.New("File do not honor the length filter")
 	}
 
 	fsDescriptor.Table = table

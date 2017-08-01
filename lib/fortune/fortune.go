@@ -62,16 +62,15 @@ func GetRandomFortune(rootNode FileSystemNodeDescriptor) <-chan FortuneData {
 	return output
 }
 
-func GetFilteredRandomFortune(rootNode FileSystemNodeDescriptor, filter func(string) bool) <-chan FortuneData {
-	if filter == nil {
-		panic("Filter can't be nil")
-	}
-
+func GetLengthFilteredRandomFortune(rootNode FileSystemNodeDescriptor, shorterThan uint32, longerThan uint32) <-chan FortuneData {
 	output := make(chan FortuneData)
 	go func() {
-		for n := range GetRandomFortune(rootNode) {
-			if filter(n.Data) {
+		for {
+			n := <- GetRandomFortune(rootNode)
+			length := uint32(len(n.Data))
+			if length > longerThan && length < shorterThan {
 				output <- n
+				break
 			}
 		}
 		close(output)
