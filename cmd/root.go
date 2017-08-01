@@ -14,6 +14,7 @@ import (
 	"github.com/patrickdappollonio/localized"
 	"strings"
 	"strconv"
+	"math"
 )
 
 var cfgFile string
@@ -153,7 +154,21 @@ func fortuneRun(request FortuneRequest) (err error) {
 		input = append(input, request.Paths...)
 	}
 
-	rootFsDescriptor, err := fortune.LoadPaths(input)
+	var (
+		shorterThan uint32 = math.MaxUint32
+		longerThan uint32 = 0
+	)
+
+	if request.ShortOnly {
+		shorterThan = uint32(request.LongestShort)
+	}
+
+	if request.LongDictumsOnly {
+		longerThan = uint32(request.LongestShort)
+	}
+
+	rootFsDescriptor, err := fortune.LoadPaths(input, shorterThan, longerThan)
+
 	if request.Match != "" {
 		matchedFortunes := fortune.MatchFortunes(rootFsDescriptor, request.Match, request.IgnoreCase)
 		printFortuneChannel(request, matchedFortunes)
@@ -167,20 +182,11 @@ func fortuneRun(request FortuneRequest) (err error) {
 		os.Exit(0)
 	}
 
-	printRandomFortune(request, rootFsDescriptor)
-	return nil
-}
-
-// Print out a random fortune from all the fortunes present in the directories and files
-// of the rootFsDescriptor graph. It will honor the possibilities data present in the graph.
-func printRandomFortune(request FortuneRequest, rootFsDescriptor fortune.FileSystemNodeDescriptor) {
-	filter := func(f string) bool {
-		return (!request.ShortOnly && !request.LongDictumsOnly) ||
-			(request.ShortOnly && len(f) < request.LongestShort ||
-				request.LongDictumsOnly && len(f) > request.LongestShort)
-	}
-	output := fortune.GetFilteredRandomFortune(rootFsDescriptor, filter)
+	// Print out a random fortune from all the fortunes present in the directories and files
+	// of the rootFsDescriptor graph. It will honor the possibilities data present in the graph.
+	output := fortune.GetLengthFilteredRandomFortune(rootFsDescriptor, shorterThan, longerThan)
 	printFortuneChannel(request, output)
+	return nil
 }
 
 func printFortuneChannel(request FortuneRequest, fortuneChannel <-chan fortune.FortuneData) {
