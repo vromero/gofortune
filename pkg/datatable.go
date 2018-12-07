@@ -1,4 +1,4 @@
-package lib
+package pkg
 
 import (
 	"bytes"
@@ -11,10 +11,10 @@ import (
 const (
 	DataTableSize = uint64(unsafe.Sizeof(DataTable{}))
 
-	DEFAULT_VERSION        = 2
-	FLAG_RANDOM     uint32 = 1 /* randomized pointers */
-	FLAG_ORDERED    uint32 = 2 /* ordered pointers */
-	FLAG_ROTATED    uint32 = 4 /* rot-13'd text */
+	DefaultVersion        = 2
+	FlagRandom     uint32 = 1 /* randomized pointers */
+	FlagOrdered    uint32 = 2 /* ordered pointers */
+	FlagRotated    uint32 = 4 /* rot-13'd text */
 )
 
 type DataTableVersion struct {
@@ -34,7 +34,7 @@ type DataTable struct {
 func CreateDataTable(numberOfStrings uint32, longestLength uint32, shortestLength uint32, flags uint32, delimiter string) (posContents DataTable) {
 	delimiterValue, _ := utf8.DecodeRuneInString(delimiter)
 	return DataTable{
-		Version:         DEFAULT_VERSION,
+		Version:         DefaultVersion,
 		NumberOfStrings: numberOfStrings,
 		LongestLength:   longestLength,
 		ShortestLength:  shortestLength,

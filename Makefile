@@ -1,55 +1,58 @@
-# A Self-Documenting Makefile: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
-
-.PHONY: all cover test clean format vet build tools help
-.DEFAULT_GOAL := help
-
-SOURCE_FILES?=$$(go list ./... | grep -v /vendor/)
+SOURCE_FILES?=./...
 TEST_PATTERN?=.
 TEST_OPTIONS?=
 
-GOTOOLS := \
-	golang.org/x/tools/cmd/cover \
-	golang.org/x/tools/cmd/goimports \
-	github.com/pierrre/gotestcover \
-	github.com/golang/dep/cmd/dep \
-	github.com/alecthomas/gometalinter \
-	github.com/goreleaser/goreleaser \
-	github.com/spf13/cobra \
-	github.com/inconshreveable/mousetrap \
-	github.com/spf13/viper \
-	github.com/mitchellh/go-homedir \
-	github.com/Masterminds/vcs \
-	github.com/patrickdappollonio/localized
+export PATH := ./bin:$(PATH)
+export GO111MODULE := on
 
-GOOS=$(shell go env GOOS)
-GOARCH=$(shell go env GOARCH)
+# Install all the build and lint dependencies
+setup:
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
+	go mod download
+.PHONY: setup
 
-all: clean build ## Perform the typical build lifecycle without releasing
+# Run all the tests
+test:
+	go test $(TEST_OPTIONS) -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
+.PHONY: test
 
-clean: ## Clean
-	rm -f gofortune
-	rm -Rf dist
-	rm -f coverage.txt
-
-test: ## Run tests
-	gotestcover $(TEST_OPTIONS) -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
-
-cover: ## Generate test coverage report
+# Run all the tests and opens the coverage report
+cover: test
 	go tool cover -html=coverage.txt
+.PHONY: cover
 
-fmt: ## gofmt and goimports all go files
+# gofmt and goimports all go files
+fmt:
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
+	# find . -name '*.md' -not -wholename './vendor/*' | xargs prettier --write
+.PHONY: fmt
 
-build: test
+# Run all the linters
+lint:
+	# TODO: fix tests and lll issues
+	./bin/golangci-lint run --tests=false --enable-all --disable=lll ./...
+	# find . -name '*.md' -not -wholename './vendor/*' | xargs prettier -l
+.PHONY: lint
+
+# Run all the tests and code checks
+ci: build test # lint
+.PHONY: ci
+
+# Build a beta version of goreleaser
+build:
 	go build
+.PHONY: build
 
-install: ## Install binaries
-	go install
+# Show to-do items per file.
+todo:
+	@grep \
+		--exclude-dir=vendor \
+		--exclude-dir=node_modules \
+		--exclude=Makefile \
+		--text \
+		--color \
+		-nRo -E ' TODO:.*|SkipNow' .
+.PHONY: todo
 
-setup: ## Setup the required go tools
-	go get -u -v $(GOTOOLS)
 
-help: ## Shows this help
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-
+.DEFAULT_GOAL := build

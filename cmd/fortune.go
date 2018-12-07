@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"os"
 
+	"math"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/mitchellh/go-homedir"
+	"github.com/patrickdappollonio/localized"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/gofortune/gofortune/lib/fortune"
-	"time"
-	"path/filepath"
-	"github.com/gofortune/gofortune/lib"
-	"github.com/patrickdappollonio/localized"
-	"strings"
-	"strconv"
-	"math"
+	"github.com/vromero/gofortune/pkg"
+	"github.com/vromero/gofortune/pkg/fortune"
 )
 
 var cfgFile string
@@ -31,7 +32,7 @@ type FortuneRequest struct {
 
 var fortuneRequest = FortuneRequest{}
 
-var (
+const (
 	defaultFortunePath          = "/usr/share/games/fortunes"
 	defaultOffensiveFortunePath = "/usr/share/games/fortunes/off"
 	minimumWaitSeconds          = 6
@@ -44,7 +45,9 @@ var RootCmd = &cobra.Command{
 	Long:  `When fortune is run with no arguments it prints out a random epigram`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fortunePrepareRequest(args)
-		fortuneRun(fortuneRequest)
+		if err := fortuneRun(fortuneRequest); err != nil {
+			panic(err)
+		}
 	},
 }
 
@@ -135,7 +138,7 @@ func fortunePrepareRequest(args []string) {
 
 // selectExisting selects the first existing path of the two paths passed
 func selectExisting(path1 string, path2 string) string {
-	if path2 == "" || ! lib.FileExists(path2) {
+	if path2 == "" || !pkg.FileExists(path2) {
 		return path1
 	}
 	return path2
@@ -143,7 +146,7 @@ func selectExisting(path1 string, path2 string) string {
 
 // fortuneRun executes fortune cookie operation requested in a FortuneRequest instance
 func fortuneRun(request FortuneRequest) (err error) {
-	input := []fortune.ProbabilityPath{}
+	var input []fortune.ProbabilityPath
 
 	if request.AllMaxims {
 		input = append(input, request.Paths...)
@@ -156,7 +159,7 @@ func fortuneRun(request FortuneRequest) (err error) {
 
 	var (
 		shorterThan uint32 = math.MaxUint32
-		longerThan uint32 = 0
+		longerThan  uint32 = 0
 	)
 
 	if request.ShortOnly {
@@ -168,10 +171,13 @@ func fortuneRun(request FortuneRequest) (err error) {
 	}
 
 	rootFsDescriptor, err := fortune.LoadPaths(input, shorterThan, longerThan)
+	if err != nil {
+		return err
+	}
 
 	if request.Match != "" {
-		matchedFortunes := fortune.MatchFortunes(rootFsDescriptor, request.Match, request.IgnoreCase)
-		printFortuneChannel(request, matchedFortunes)
+		matchedFortunesChannel, errorChannel := fortune.GetFortunesMatching(rootFsDescriptor, request.Match, request.IgnoreCase)
+		printFortuneChannels(request, matchedFortunesChannel, errorChannel)
 		os.Exit(0)
 	}
 
@@ -184,20 +190,32 @@ func fortuneRun(request FortuneRequest) (err error) {
 
 	// Print out a random fortune from all the fortunes present in the directories and files
 	// of the rootFsDescriptor graph. It will honor the possibilities data present in the graph.
-	output := fortune.GetLengthFilteredRandomFortune(rootFsDescriptor, shorterThan, longerThan)
-	printFortuneChannel(request, output)
+	output, errorOutput := fortune.GetLengthFilteredRandomFortune(rootFsDescriptor, shorterThan, longerThan)
+	printFortune(request, output, errorOutput)
 	return nil
 }
 
-func printFortuneChannel(request FortuneRequest, fortuneChannel <-chan fortune.FortuneData) {
+func printFortuneChannels(request FortuneRequest, fortuneChannel <-chan fortune.FortuneData, errorChannel <-chan error) {
 	for fortuneData := range fortuneChannel {
-		if request.ShowCookieFile {
-			fmt.Printf("(%s)\n%%\n", fortuneData.FileName)
-		}
-		fmt.Println(fortuneData.Data)
-		if request.Wait {
-			readTimeWait(len(fortuneData.Data))
-		}
+		printFortune(request, fortuneData, nil)
+	}
+
+	for errorData := range errorChannel {
+		printFortune(request, fortune.FortuneData{}, errorData)
+	}
+}
+
+func printFortune(request FortuneRequest, fortune fortune.FortuneData, err error) {
+	if err != nil {
+		panic(err)
+	}
+
+	if request.ShowCookieFile {
+		fmt.Printf("(%s)\n%%\n", fortune.FileName)
+	}
+	fmt.Println(fortune.Data)
+	if request.Wait {
+		readTimeWait(len(fortune.Data))
 	}
 }
 
@@ -213,8 +231,8 @@ func printListOfFiles(directoryDescriptor fortune.FileSystemNodeDescriptor) {
 }
 
 // Wait a length relative amount of time after fortune is printed.
-// The minimum time wait is defined
+// The minimum time wait is defined as constant in this file
 func readTimeWait(length int) {
-	timeWait := lib.Max(uint32(length/charsPerSec), uint32(minimumWaitSeconds))
+	timeWait := pkg.Max(uint32(length/charsPerSec), uint32(minimumWaitSeconds))
 	time.Sleep(time.Second * time.Duration(timeWait))
 }

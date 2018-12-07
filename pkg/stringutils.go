@@ -1,4 +1,4 @@
-package lib
+package pkg
 
 func RemoveCRLF(data []byte) []byte {
 	if len(data) > 0 && data[len(data)-1] == '\n' {

@@ -1,14 +1,15 @@
 package repository
 
 import (
-	"io/ioutil"
-	"github.com/Masterminds/vcs"
-	"os"
 	"fmt"
-	"path/filepath"
-	"strings"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
+
+	"github.com/Masterminds/vcs"
 )
 
 func InstallRepository(remote string) (err error) {
@@ -36,7 +37,6 @@ func installLocalRepository(repo vcs.Repo, localRepoPath string) (err error) {
 	return
 }
 
-
 func visitRepositoryFile(repo vcs.Repo, basePath string, path string, info os.FileInfo, err error) error {
 	if err != nil {
 		fmt.Println(err)
@@ -58,13 +58,6 @@ func visitRepositoryFile(repo vcs.Repo, basePath string, path string, info os.Fi
 	fmt.Println(getLocalFileName(repo, filepath.Base(relPath)))
 	return nil
 }
-
-//func getLocalDirectoryName(repo vcs.Repo) {
-//	localRepositoryDir, _ := ioutil.TempDir("", "gofortune")
-//
-//
-//
-//}
 
 func getLocalFileName(repo vcs.Repo, fileName string) string {
 	parserdUrl, err := url.Parse(repo.Remote())
@@ -99,7 +92,7 @@ func cloneRepositoryIntoTemp(remote string) (vcs.Repo, string, error) {
 
 	repo, err := vcs.NewRepo(remote, tmpLocalRepo)
 	if err != nil {
-		panic(err)
+		return nil, "", err
 	}
 
 	repo.Get()

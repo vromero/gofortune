@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gofortune/gofortune/cmd"
+	"github.com/vromero/gofortune/cmd"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 }
 
 // To maintain compatibility with the classic tools: fortune, strfile. GoFortune supports to have its
-// executable renamed or symlinked. If the appropriate names are found, the command line will
+// executable renamed or symlinked. If the appropriate executable names are found, the command line will
 // be altered to honor the original syntax.
 func processAliases() {
 	switch getExecutableName() {

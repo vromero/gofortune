@@ -1,4 +1,4 @@
-package lib
+package pkg
 
 func Min(a, b uint32) uint32 {
 	if a < b {

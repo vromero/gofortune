@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gofortune/gofortune/lib"
+	"github.com/vromero/gofortune/pkg"
 )
 
 // Represents a file/directory path with the possibilities established by the requester
@@ -26,7 +26,7 @@ type FileSystemNodeDescriptor struct {
 	NumFiles                 int    // Total number of files
 	Path                     string
 	IndexPath                string
-	Table                    lib.DataTable
+	Table                    pkg.DataTable
 	isUtf8                   bool
 	Children                 []FileSystemNodeDescriptor
 	Parent                   *FileSystemNodeDescriptor
@@ -59,6 +59,9 @@ func loadPath(path ProbabilityPath, parent *FileSystemNodeDescriptor, shorterTha
 	}
 
 	stat, err := os.Stat(path.Path)
+	if err != nil {
+		return err
+	}
 	if stat.IsDir() {
 		err = loadDirPath(&fsDescriptor, parent, shorterThan, longerThan)
 		if err != nil {
@@ -100,22 +103,22 @@ func loadDirPath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeD
 
 func loadFilePath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNodeDescriptor, shorterThan uint32, longerThan uint32) error {
 	if !isFortuneFile(fsDescriptor.Path) {
-		return errors.New("File is not a valid fortune file")
+		return errors.New("file is not a valid fortune file")
 	}
 
 	indexPath := fsDescriptor.Path + ".dat"
 	if !isFortuneIndexFile(indexPath) {
-		return errors.New("File is not a valid fortune index file")
+		return errors.New("file is not a valid fortune index file")
 	}
 	fsDescriptor.IndexPath = indexPath
 
-	table, err := lib.LoadDataTableFromPath(fsDescriptor.IndexPath)
+	table, err := pkg.LoadDataTableFromPath(fsDescriptor.IndexPath)
 	if err != nil {
 		return err
 	}
 
 	if table.LongestLength < longerThan || table.ShortestLength > shorterThan {
-		return errors.New("File do not honor the length filter")
+		return errors.New("file do not honor the length filter")
 	}
 
 	fsDescriptor.Table = table
@@ -126,7 +129,7 @@ func loadFilePath(fsDescriptor *FileSystemNodeDescriptor, parent *FileSystemNode
 	return nil
 }
 
-func populateFileAmounts(fsDescriptor *FileSystemNodeDescriptor, table lib.DataTable) {
+func populateFileAmounts(fsDescriptor *FileSystemNodeDescriptor, table pkg.DataTable) {
 	current := fsDescriptor
 	for {
 		current.NumEntries += uint64(table.NumberOfStrings)
@@ -141,23 +144,20 @@ func populateFileAmounts(fsDescriptor *FileSystemNodeDescriptor, table lib.DataT
 
 // Assert if a file is a fortune index file
 func isFortuneFile(path string) bool {
-	if !lib.FileExists(path) {
-		return false
-	}
-	return true
+	return pkg.FileExists(path)
 }
 
 // Assert if a file is a fortune index file
 func isFortuneIndexFile(path string) bool {
 
 	// If the file has not an associated fortune index file it should be ignored
-	if !lib.FileExists(path) {
+	if !pkg.FileExists(path) {
 		return false
 	}
 
 	// If the associated fortune index is has not the correct version
-	version, err := lib.LoadDataTableVersionFromPath(path)
-	if err != nil || version.Version != lib.DEFAULT_VERSION {
+	version, err := pkg.LoadDataTableVersionFromPath(path)
+	if err != nil || version.Version != pkg.DefaultVersion {
 		return false
 	}
 

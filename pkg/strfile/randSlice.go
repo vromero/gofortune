@@ -4,14 +4,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/gofortune/gofortune/lib"
+	"github.com/vromero/gofortune/pkg"
 )
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
-func Shuffle(input []lib.DataPos) {
+func Shuffle(input []pkg.DataPos) {
 	for i := range input {
 		j := rand.Intn(i + 1)
 		input[i], input[j] = input[j], input[i]

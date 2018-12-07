@@ -1,11 +1,11 @@
-package lib
+package pkg
 
 import (
 	"bytes"
 	"testing"
 )
 
-const TEST_STRING = "hello"
+const TestString = "hello"
 
 func TestRemoveN(t *testing.T) {
 	validateRemoveX(t, "\n")
@@ -20,9 +20,9 @@ func TestDontRemoveValid(t *testing.T) {
 }
 
 func validateRemoveX(t *testing.T, suffix string) {
-	removed := RemoveCRLF([]byte(TEST_STRING + suffix))
+	removed := RemoveCRLF([]byte(TestString + suffix))
 
-	if bytes.Compare(removed, []byte(TEST_STRING)) != 0 {
+	if bytes.Compare(removed, []byte(TestString)) != 0 {
 		t.Error("\\n or \\r was not removed")
 	}
 }
