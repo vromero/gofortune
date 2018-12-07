@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gofortune/gofortune/lib"
-	"github.com/gofortune/gofortune/lib/strfile"
 	"github.com/spf13/cobra"
+	"github.com/vromero/gofortune/pkg"
+	"github.com/vromero/gofortune/pkg/strfile"
 )
 
 type StrFileRequest struct {
@@ -16,9 +16,9 @@ type StrFileRequest struct {
 
 var strFileCmdRequest = StrFileRequest{}
 
-var strFileName string = "strfile"
-var strFileShortDescription string = "Create a random access index file for storing string"
-var strFileLongDescription string = `strfile reads a file containing groups of lines separated by a line containing a
+var strFileName = "strfile"
+var strFileShortDescription = "Create a random access index file for storing string"
+var strFileLongDescription = `strfile reads a file containing groups of lines separated by a line containing a
 single percent '%' sign (or other specified delimiter character) and creates a data file which contains a header
 structure and a table of file offsets for each group of lines. This allows random access of the strings.
 The output file, if not specified on the command line, is named sourcefile.dat.`
@@ -28,7 +28,7 @@ var strfileCmd = &cobra.Command{
 	Short: strFileShortDescription,
 	Long:  strFileLongDescription,
 	Run: func(cmd *cobra.Command, args []string) {
-		strfilePrepareRequest(args)
+		strFilePrepareRequest(args)
 	},
 }
 
@@ -42,7 +42,7 @@ func init() {
 	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Rot13, "rot13", "x", false, "Rotate  13  positions  in  a simple caesar cypher")
 }
 
-func strfilePrepareRequest(args []string) {
+func strFilePrepareRequest(args []string) {
 
 	if len(args) < 1 {
 		fmt.Println("No input file name")
@@ -54,7 +54,7 @@ func strfilePrepareRequest(args []string) {
 	if len(args[1]) > 0 {
 		strFileCmdRequest.DataFile = args[1]
 	} else {
-		strFileCmdRequest.DataFile = lib.RemoveFileExtension(args[0]) + ".dat"
+		strFileCmdRequest.DataFile = pkg.RemoveFileExtension(args[0]) + ".dat"
 	}
 
 	strFileRun(strFileCmdRequest)

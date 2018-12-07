@@ -1,10 +1,10 @@
-package lib
+package pkg
 
 import (
 	"bufio"
 	"bytes"
-	"os"
 	"io"
+	"os"
 )
 
 var (

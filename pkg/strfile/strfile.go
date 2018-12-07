@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gofortune/gofortune/lib"
+	"github.com/vromero/gofortune/pkg"
 )
 
 func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 bool, delimitingChar string, sourceFile string, dataFile string) (err error) {
@@ -32,22 +32,22 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 	var pos uint32
 	var fortuneBytes []byte
 
-	fortuneBase := make([]lib.DataPos, 0)
+	fortuneBase := make([]pkg.DataPos, 0)
 
 	for scanner.Scan() {
 		fortunePortion := scanner.Bytes()
 		pos += uint32(len(fortunePortion))
 
-		if string(lib.RemoveCRLF(fortunePortion)) == delimitingChar {
+		if string(pkg.RemoveCRLF(fortunePortion)) == delimitingChar {
 			totalFortunes++
 			fortuneStringLength := uint32(len(fortuneBytes))
-			shortestFortune = lib.Min(shortestFortune, fortuneStringLength)
-			longestFortune = lib.Max(longestFortune, fortuneStringLength)
+			shortestFortune = pkg.Min(shortestFortune, fortuneStringLength)
+			longestFortune = pkg.Max(longestFortune, fortuneStringLength)
 
 			transformedString := applyFortuneTransformations(string(fortuneBytes), ignoreCase, rot13)
-			dataPos := lib.DataPos{OriginalOffset: pos, Text: transformedString}
+			dataPos := pkg.DataPos{OriginalOffset: pos, Text: transformedString}
 			if !order && !randomize {
-				lib.WriteDataPos(outputFile, int(lib.DataTableSize), totalFortunes, dataPos)
+				pkg.WriteDataPos(outputFile, int(pkg.DataTableSize), totalFortunes, dataPos)
 			} else {
 				fortuneBase = append(fortuneBase, dataPos)
 			}
@@ -64,8 +64,8 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 	}
 
 	flags := calculateFlags(randomize, order, rot13)
-	posContents := lib.CreateDataTable(totalFortunes, longestFortune, shortestFortune, flags, delimitingChar)
-	lib.SaveDataTable(outputFile, posContents)
+	posContents := pkg.CreateDataTable(totalFortunes, longestFortune, shortestFortune, flags, delimitingChar)
+	pkg.SaveDataTable(outputFile, posContents)
 
 	if !silent {
 		report(dataFile, totalFortunes, longestFortune, shortestFortune)
@@ -73,14 +73,14 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 
 	if order {
 		sort.Slice(fortuneBase, func(i, j int) bool {
-			return lib.LessThanDataPos(fortuneBase[i], fortuneBase[j])
+			return pkg.LessThanDataPos(fortuneBase[i], fortuneBase[j])
 		})
 	} else if randomize {
 		Shuffle(fortuneBase)
 	}
 
 	if order || randomize {
-		lib.WriteDataPosSlice(outputFile, int(lib.DataTableSize), fortuneBase)
+		pkg.WriteDataPosSlice(outputFile, int(pkg.DataTableSize), fortuneBase)
 	}
 
 	return
@@ -88,15 +88,15 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 
 func calculateFlags(randomize bool, order bool, rot13 bool) (flags uint32) {
 	if randomize {
-		flags = flags | lib.FLAG_RANDOM
+		flags = flags | pkg.FlagRandom
 	}
 
 	if order {
-		flags = flags | lib.FLAG_ORDERED
+		flags = flags | pkg.FlagOrdered
 	}
 
 	if rot13 {
-		flags = flags | lib.FLAG_ROTATED
+		flags = flags | pkg.FlagRotated
 	}
 	return
 }
@@ -108,7 +108,7 @@ func applyFortuneTransformations(input string, ignoreCase bool, rot13 bool) (out
 	}
 
 	if rot13 {
-		output = lib.Rot13(input)
+		output = pkg.Rot13(input)
 	}
 	return
 }

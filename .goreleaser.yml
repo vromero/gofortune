@@ -1,88 +1,63 @@
-project_name: gofortune
-
-release:
-  github:
-    owner: gofortune
-    name: gofortune
-
-builds:
-- goos:
-    - linux
-    - darwin
-    - freebsd
-    - windows
-    - netbsd
-    - openbsd
-    - dragonfly
-  goarch:
-    - amd64
-    - 386
-    - arm
-    - arm64
-  goarm:
-    - "6"
-  main: .
-  ldflags: -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
-  binary: gofortune
-  ignore:
-    - goos: darwin
-      goarch: 386
-    - goos: openbsd
-      goarch: arm
-      goarm: 6
-    - goos: linux
-      goarch: arm
-      goarm: 7
-    - goos: openbsd
-      goarch: arm
+before:
   hooks:
-    post: ./.goreleaser-hooks.sh
-
-fpm:
-  formats:
-    - deb
-    - rpm
-  vendor: "Victor Romero"
-  homepage: "https://gofortune.github.io"
-  maintainer: "Victor romero <victor.romero@gmail.com>"
-  description: "Implementation in the fortune unix tools: fortune and strfile. "
-  license: "Apache 2.0"
-
+    - go mod download
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+checksum:
+  name_template: '{{ .ProjectName }}_checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - Merge pull request
+      - Merge branch
 archive:
-  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{.Arm }}{{ end }}'
-  format: tar.gz
+  name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
   format_overrides:
     - goos: windows
       format: zip
-  files:
-    - LICENSE*
-    - README*
-  replacements:
-    amd64: 64bit
-    386: 32bit
-    arm: ARM
-    arm64: ARM64
-    darwin: macOS
-    linux: Linux
-    windows: Windows
-    openbsd: OpenBSD
-    netbsd: NetBSD
-    freebsd: FreeBSD
-    dragonfly: DragonFlyBSD
-
 brew:
   github:
-    owner: gofortune
-    name: homebrew-gofortune
+    owner: vromero
+    name: homebrew-tap
   folder: Formula
+  homepage:  https://goreleaser.com
+  description: Deliver Go binaries as fast and easily as possible
+  test: |
+    system "#{bin}/goreleaser -v"
+scoop:
+  bucket:
+    owner: vromero
+    name: scoop-bucket
+  homepage:  https://goreleaser.com
+  description: Deliver Go binaries as fast and easily as possible
+  license: MIT
+nfpm:
+  name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  vendor: "Victor Romero"
   homepage: "https://gofortune.github.io"
-  description: "Implementation in the fortune unix tools: fortune and strfile."
-  install: |
-    bin.install "gofortune"
-    bin.install "fortune"
-    bin.install "strfile"
-
-snapshot:
-  name_template: SNAPSHOT-{{ .Commit }}
-
+  maintainer: "Victor romero <victor.romero@gmail.com>"
+  description: "Implementation of the fortune unix tools: fortune and strfile."
+  license: "Apache 2.0"
+  formats:
+    - deb
+    - rpm
 
