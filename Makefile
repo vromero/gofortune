@@ -27,9 +27,7 @@ fmt:
 	# find . -name '*.md' -not -wholename './vendor/*' | xargs prettier --write
 .PHONY: fmt
 
-# Run all the linters
-lint:
-	# TODO: fix tests and lll issues
+	# Run all the linters
 	./bin/golangci-lint run --tests=false --enable-all --disable=lll ./...
 	# find . -name '*.md' -not -wholename './vendor/*' | xargs prettier -l
 .PHONY: lint
