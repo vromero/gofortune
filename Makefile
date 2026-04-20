@@ -7,7 +7,7 @@ export GO111MODULE := on
 
 # Install all the build and lint dependencies
 setup:
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 	go mod download
 .PHONY: setup
 
@@ -36,7 +36,7 @@ fmt:
 ci: build test # lint
 .PHONY: ci
 
-# Build a beta version of goreleaser
+# Build the project
 build:
 	go build
 .PHONY: build
