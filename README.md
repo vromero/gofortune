@@ -5,8 +5,6 @@
   <p align="center">
     <a href="https://github.com/vromero/gofortune/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/vromero/gofortune.svg?style=flat-square"></a>
     <a href="/LICENSE"><img alt="Software License" src="https://img.shields.io/badge/license-Apache%202-blue.svg?style=flat-square"></a>
-    <a href="https://codecov.io/gh/vromero/gofortune"><img alt="Codecov branch" src="https://img.shields.io/codecov/c/github/vromero/gofortune/master.svg?style=flat-square"></a>
-    <a href="https://gorereportcard.com/report/github.com/vromero/gofortune"><img alt="Go Report Card" src="https://img.shields.io/goreportcard/badge/github.com/vromero/gofortune?style=flat-square"></a>
     <a href="https://github.com/goreleaser"><img alt="Powered By: GoReleaser" src="https://img.shields.io/badge/powered%20by-goreleaser-green.svg?style=flat-square"></a>
   </p>
 </p>
