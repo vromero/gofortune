@@ -95,7 +95,7 @@ func fortunePrepareRequest(args []string) {
 		_ = lang.Detect()
 		var lp, op string
 		lp = filepath.Join(defaultFortunePath, lang.Lang)
-		op = filepath.Join(defaultOffensiveFortunePath, lang.Lang) // Wait, I am still making typos!
+		op = filepath.Join(defaultOffensiveFortunePath, lang.Lang)
 
 		fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: selectExisting(defaultFortunePath, lp)}}
 		fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: selectExisting(defaultOffensiveFortunePath, op)}}

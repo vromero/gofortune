@@ -59,9 +59,13 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return err
 	}
+
+	if !silent {
+		report(dataFile, totalFortunes, longestFortune, shortestFortune)
+	}
+
 
 	flags := calculateFlags(randomize, order, rot13)
 	posContents := pkg.CreateDataTable(totalFortunes, longestFortune, shortestFortune, flags, delimitingChar)

@@ -1,10 +1,12 @@
 package fortune
 
 import (
+	"errors"
 	"math/rand"
 )
 
-func GetRandomLeafNode(fsDescriptor FileSystemNodeDescriptor) FileSystemNodeDescriptor {
+
+func GetRandomLeafNode(fsDescriptor FileSystemNodeDescriptor) (FileSystemNodeDescriptor, error) {
 	if len(fsDescriptor.Children) > 0 {
 		r := rand.Float32() * fsDescriptor.Percent
 		var cumulativeProbability float32
@@ -15,9 +17,9 @@ func GetRandomLeafNode(fsDescriptor FileSystemNodeDescriptor) FileSystemNodeDesc
 				return GetRandomLeafNode(fsDescriptor.Children[i])
 			}
 		}
-		panic("No branch was randomly selected")
+		return FileSystemNodeDescriptor{}, errors.New("no branch was randomly selected")
 	} else {
-		return fsDescriptor
+		return fsDescriptor, nil
 	}
 }
 
