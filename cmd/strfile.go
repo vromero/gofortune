@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/vromero/gofortune/pkg"
 	"github.com/vromero/gofortune/pkg/strfile"
@@ -27,8 +24,16 @@ var strfileCmd = &cobra.Command{
 	Use:   strFileName,
 	Short: strFileShortDescription,
 	Long:  strFileLongDescription,
-	Run: func(cmd *cobra.Command, args []string) {
-		strFilePrepareRequest(args)
+	Args:  cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		strFileCmdRequest.SourceFile = args[0]
+		if len(args) > 1 {
+			strFileCmdRequest.DataFile = args[1]
+		} else {
+			strFileCmdRequest.DataFile = pkg.RemoveFileExtension(args[0]) + ".dat"
+		}
+		return strfile.StrFile(strFileCmdRequest.IgnoreCase, strFileCmdRequest.Silent, strFileCmdRequest.Order, strFileCmdRequest.Randomize, strFileCmdRequest.Rot13,
+			strFileCmdRequest.DelimitingChar, strFileCmdRequest.SourceFile, strFileCmdRequest.DataFile)
 	},
 }
 
@@ -40,24 +45,6 @@ func init() {
 	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Order, "order", "o", false, "Order the strings in alphabetical Order")
 	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Randomize, "randomize", "n", false, "Randomize  access  to  the strings")
 	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Rot13, "rot13", "x", false, "Rotate  13  positions  in  a simple caesar cypher")
-}
-
-func strFilePrepareRequest(args []string) {
-
-	if len(args) < 1 {
-		fmt.Println("No input file name")
-		os.Exit(1)
-	}
-
-	strFileCmdRequest.SourceFile = args[0]
-
-	if len(args[1]) > 0 {
-		strFileCmdRequest.DataFile = args[1]
-	} else {
-		strFileCmdRequest.DataFile = pkg.RemoveFileExtension(args[0]) + ".dat"
-	}
-
-	strFileRun(strFileCmdRequest)
 }
 
 func strFileRun(request StrFileRequest) (err error) {

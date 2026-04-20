@@ -21,9 +21,10 @@ var getCmd = &cobra.Command{
 	Use:   getName,
 	Short: getShortDescription,
 	Long:  getLongDescription,
-	Run: func(cmd *cobra.Command, args []string) {
-		getPrepareRequest(args)
-		getRun(getRequest)
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		getRequest.RepoUrl = args[0]
+		return getRun(getRequest)
 	},
 }
 
@@ -31,9 +32,6 @@ func init() {
 	RootCmd.AddCommand(getCmd)
 }
 
-func getPrepareRequest(args []string) {
-	getRequest.RepoUrl = args[0]
-}
 
 // fortuneRun executes fortune cookie operation requested in a FortuneRequest instance
 func getRun(request GetRequest) (err error) {
