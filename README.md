@@ -5,7 +5,6 @@
   <p align="center">
     <a href="https://github.com/vromero/gofortune/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/vromero/gofortune.svg?style=flat-square"></a>
     <a href="/LICENSE"><img alt="Software License" src="https://img.shields.io/badge/license-Apache%202-blue.svg?style=flat-square"></a>
-    <a href="https://github.com/goreleaser"><img alt="Powered By: GoReleaser" src="https://img.shields.io/badge/powered%20by-goreleaser-green.svg?style=flat-square"></a>
   </p>
 </p>
 
@@ -33,6 +32,12 @@ gofortune fortune
 Create a random access index file for storing strings:
 ```bash
 gofortune strfile <source_file> [data_file]
+```
+
+Example:
+```bash
+# Create an index from fortunes.txt and save it as fortunes.dat
+gofortune strfile fortunes.txt
 ```
 
 ### Get

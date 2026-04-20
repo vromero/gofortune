@@ -1,0 +1,13 @@
+run:
+  timeout: 5m
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+lint:
+  excludes:
+    - '!**/*_test.go'
