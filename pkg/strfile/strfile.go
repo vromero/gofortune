@@ -15,14 +15,16 @@ import (
 
 func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 bool, delimitingChar string, sourceFile string, dataFile string) (err error) {
 	inputFile, err := os.Open(sourceFile)
-	defer inputFile.Close()
-
-	outputFile, err := os.Create(dataFile)
-	defer outputFile.Close()
-
 	if err != nil {
 		return err
 	}
+	defer inputFile.Close()
+
+	outputFile, err := os.Create(dataFile)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
 
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(advanceAwareSplitter)
@@ -62,20 +64,14 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 		return err
 	}
 
-	if !silent {
-		report(dataFile, totalFortunes, longestFortune, shortestFortune)
-	}
-
-
 	flags := calculateFlags(randomize, order, rot13)
 	posContents := pkg.CreateDataTable(totalFortunes, longestFortune, shortestFortune, flags, delimitingChar)
-	pkg.SaveDataTable(outputFile, posContents)
-
-	if !silent {
-		report(dataFile, totalFortunes, longestFortune, shortestFortune)
+	if err := pkg.SaveDataTable(outputFile, posContents); err != nil {
+		return err
 	}
 
 	if order {
+
 		sort.Slice(fortuneBase, func(i, j int) bool {
 			return pkg.LessThanDataPos(fortuneBase[i], fortuneBase[j])
 		})

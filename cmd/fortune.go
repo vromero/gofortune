@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"math"
 	"path/filepath"
@@ -10,15 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/patrickdappollonio/localized"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/vromero/gofortune/pkg"
 	"github.com/vromero/gofortune/pkg/fortune"
 )
-
-var cfgFile string
 
 type FortuneRequest struct {
 	AllMaxims, ShowCookieFile, PrintListOfFiles bool
@@ -32,12 +29,13 @@ type FortuneRequest struct {
 
 var fortuneRequest = FortuneRequest{}
 
-const (
+var (
 	defaultFortunePath          = "/usr/share/games/fortunes"
 	defaultOffensiveFortunePath = "/usr/share/games/fortunes/off"
 	minimumWaitSeconds          = 6
 	charsPerSec                 = 20
 )
+
 
 var RootCmd = &cobra.Command{
 	Use:   "gofortune",
@@ -57,37 +55,29 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	if runtime.GOOS == "windows" {
+		configDir, err := os.UserConfigDir()
+		if err == nil {
+			defaultFortunePath = filepath.Join(configDir, "gofortune", "fortunes")
+			defaultOffensiveFortunePath = filepath.Join(configDir, "gofortune", "fortunes", "off")
+		} else {
+			defaultFortunePath = "C:\\ProgramData\\gofortune\\fortunes"
+			defaultOffensiveFortunePath = "C:\\ProgramData\\gofortune\\fortunes\\off"
+		}
+	}
+
 	RootCmd.Flags().BoolVarP(&fortuneRequest.AllMaxims, "allMaxims", "a", false, "Choose from all lists of maxims")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.Offensive, "offensive", "o", false, "Choose only from potentially offensive aphorisms")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.ShowCookieFile, "showCookieFile", "c", false, "Show the cookie file from which the fortune came")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.PrintListOfFiles, "printListOfFiles", "f", false, "Print out the list of files which would be searched, but don't print a fortune")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.ConsiderAllEqual, "considerAllEqual", "e", false, "Consider all fortune files to be of equal size")
-	RootCmd.Flags().StringVarP(&fortuneRequest.Match, "match", "m", "", "Print out all fortunes which match the basic regular expression pattern")
+	RootCmd.Flags().StringVarP(&fortuneRequest.Match, "match", "m", "", "Print out all fortunes which enough regular expression pattern")
 	RootCmd.Flags().IntVarP(&fortuneRequest.LongestShort, "longestShort", "n", 160, "set the longest fortune length (in characters) considered to be \"short\" (the default is 160)")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.LongDictumsOnly, "longDictumsOnly", "l", false, "Long dictums only. See -n on how \"long\" is enough")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.ShortOnly, "shortOnly", "s", false, "Short apothegms only. See -n on which fortunes are considered \"short\"")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.IgnoreCase, "ignoreCase", "i", false, "Ignore case for -m patterns")
 	RootCmd.Flags().BoolVarP(&fortuneRequest.Wait, "wait", "w", false, "Wait before termination for an amount of time calculated from the number of characters in the message")
-}
-
-func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".gofortune")
 	}
-	viper.AutomaticEnv()
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
-}
 
 func fortunePrepareRequest(args []string) {
 	if len(args) == 0 {
