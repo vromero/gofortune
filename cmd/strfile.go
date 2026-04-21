@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/vromero/gofortune/pkg"
 	"github.com/vromero/gofortune/pkg/strfile"
@@ -32,8 +34,17 @@ var strfileCmd = &cobra.Command{
 		} else {
 			strFileCmdRequest.DataFile = pkg.RemoveFileExtension(args[0]) + ".dat"
 		}
-		return strfile.StrFile(strFileCmdRequest.IgnoreCase, strFileCmdRequest.Silent, strFileCmdRequest.Order, strFileCmdRequest.Randomize, strFileCmdRequest.Rot13,
+		summary, err := strfile.StrFile(strFileCmdRequest.IgnoreCase, strFileCmdRequest.Order, strFileCmdRequest.Randomize, strFileCmdRequest.Rot13,
 			strFileCmdRequest.DelimitingChar, strFileCmdRequest.SourceFile, strFileCmdRequest.DataFile)
+		if err != nil {
+			return err
+		}
+		if !strFileCmdRequest.Silent {
+			if _, werr := summary.WriteTo(os.Stdout); werr != nil {
+				return werr
+			}
+		}
+		return nil
 	},
 }
 
