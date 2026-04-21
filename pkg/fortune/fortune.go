@@ -97,7 +97,7 @@ func GetRandomFortune(rootNode FileSystemNodeDescriptor) (Cookie, error) {
 	if err != nil {
 		return Cookie{}, fmt.Errorf("open index file %q: %w", randomNode.IndexPath, err)
 	}
-	defer indexFile.Close()
+	defer func() { _ = indexFile.Close() }()
 
 	dataPos, err := pkg.ReadDataPos(indexFile, int(pkg.DataTableSize), uint32(randomEntry))
 	if err != nil {
@@ -108,7 +108,7 @@ func GetRandomFortune(rootNode FileSystemNodeDescriptor) (Cookie, error) {
 	if err != nil {
 		return Cookie{}, fmt.Errorf("open fortune file %q: %w", randomNode.Path, err)
 	}
-	defer fortuneFile.Close()
+	defer func() { _ = fortuneFile.Close() }()
 
 	data, err := pkg.ReadData(fortuneFile, int64(dataPos.OriginalOffset))
 	if err != nil {
@@ -183,14 +183,14 @@ func scanLeafForMatches(node FileSystemNodeDescriptor, expression *regexp.Regexp
 		errorOutput <- fmt.Errorf("open index file %q: %w", node.IndexPath, err)
 		return
 	}
-	defer indexFile.Close()
+	defer func() { _ = indexFile.Close() }()
 
 	fortuneFile, err := os.Open(node.Path)
 	if err != nil {
 		errorOutput <- fmt.Errorf("open fortune file %q: %w", node.Path, err)
 		return
 	}
-	defer fortuneFile.Close()
+	defer func() { _ = fortuneFile.Close() }()
 
 	fileName := filepath.Base(node.Path)
 	for i := int64(0); i < int64(node.NumEntries); i++ {

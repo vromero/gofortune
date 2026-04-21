@@ -1,9 +1,8 @@
 package pkg
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 )
 
@@ -17,27 +16,25 @@ func TestRemoveFileExtension(t *testing.T) {
 }
 
 func TestFileExists(t *testing.T) {
-	existentFile, err := ioutil.TempFile("", "gofortune")
+	existentFile, err := os.CreateTemp("", "gofortune")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	defer existentFile.Close()
+	t.Cleanup(func() {
+		_ = existentFile.Close()
+		_ = os.Remove(existentFile.Name())
+	})
 
-	if FileExists(existentFile.Name()) != true {
-		t.Error("Expedted file exists")
+	if !FileExists(existentFile.Name()) {
+		t.Error("expected file to exist")
 	}
 }
 
 func TestFileDoestExists(t *testing.T) {
-	emptyDirectory, err := ioutil.TempDir("", "gofortune")
-	if err != nil {
-		panic(err)
-	}
-	defer syscall.Unlink(emptyDirectory)
-
+	emptyDirectory := t.TempDir()
 	nonExistentFile := filepath.Join(emptyDirectory, "nonExistentFile.name")
 
-	if FileExists(nonExistentFile) != false {
-		t.Error("Expedted file doesnt exists")
+	if FileExists(nonExistentFile) {
+		t.Error("expected file to not exist")
 	}
 }
