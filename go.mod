@@ -1,6 +1,6 @@
 module github.com/vromero/gofortune
 
-go 1.26.2
+go 1.25.0
 
 require (
 	github.com/patrickdappollonio/localized v0.0.0-20170307163927-f0888e3caa61
