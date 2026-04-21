@@ -18,13 +18,19 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 	if err != nil {
 		return err
 	}
-	defer inputFile.Close()
+	defer func() { _ = inputFile.Close() }()
 
 	outputFile, err := os.Create(dataFile)
 	if err != nil {
 		return err
 	}
-	defer outputFile.Close()
+	// Capture Close errors so a failed flush on the output index file does
+	// not silently produce a truncated/corrupt .dat file.
+	defer func() {
+		if cerr := outputFile.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close %q: %w", dataFile, cerr)
+		}
+	}()
 
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(advanceAwareSplitter)
@@ -49,7 +55,9 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 			transformedString := applyFortuneTransformations(string(fortuneBytes), ignoreCase, rot13)
 			dataPos := pkg.DataPos{OriginalOffset: pos, Text: transformedString}
 			if !order && !randomize {
-				pkg.WriteDataPos(outputFile, int(pkg.DataTableSize), totalFortunes, dataPos)
+				if werr := pkg.WriteDataPos(outputFile, int(pkg.DataTableSize), totalFortunes, dataPos); werr != nil {
+					return werr
+				}
 			} else {
 				fortuneBase = append(fortuneBase, dataPos)
 			}
@@ -80,7 +88,9 @@ func StrFile(ignoreCase bool, silent bool, order bool, randomize bool, rot13 boo
 	}
 
 	if order || randomize {
-		pkg.WriteDataPosSlice(outputFile, int(pkg.DataTableSize), fortuneBase)
+		if werr := pkg.WriteDataPosSlice(outputFile, int(pkg.DataTableSize), fortuneBase); werr != nil {
+			return werr
+		}
 	}
 
 	return

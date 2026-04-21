@@ -3,6 +3,7 @@ package pkg
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"unicode/utf8"
 	"unsafe"
@@ -42,9 +43,12 @@ func CreateDataTable(numberOfStrings uint32, longestLength uint32, shortestLengt
 		Delimiter:       uint8(delimiterValue)}
 }
 
-func LoadDataTableVersionFromPath(inputFilePath string) (posContents DataTableVersion, err error) {
+func LoadDataTableVersionFromPath(inputFilePath string) (DataTableVersion, error) {
 	inputFile, err := os.Open(inputFilePath)
-	defer inputFile.Close()
+	if err != nil {
+		return DataTableVersion{}, err
+	}
+	defer func() { _ = inputFile.Close() }()
 	return LoadDataTableVersion(inputFile)
 }
 
@@ -53,9 +57,12 @@ func LoadDataTableVersion(inputFile *os.File) (posContents DataTableVersion, err
 	return posContents, err
 }
 
-func LoadDataTableFromPath(inputFilePath string) (posContents DataTable, err error) {
+func LoadDataTableFromPath(inputFilePath string) (DataTable, error) {
 	inputFile, err := os.Open(inputFilePath)
-	defer inputFile.Close()
+	if err != nil {
+		return DataTable{}, err
+	}
+	defer func() { _ = inputFile.Close() }()
 	return LoadDataTable(inputFile)
 }
 
@@ -64,12 +71,16 @@ func LoadDataTable(inputFile *os.File) (posContents DataTable, err error) {
 	return posContents, err
 }
 
-func SaveDataTable(outputFile *os.File, posContents DataTable) (err error) {
+// SaveDataTable writes the header posContents at offset 0 of outputFile.
+// Returns any encoding or write error so callers can surface a corrupt or
+// truncated index instead of silently continuing.
+func SaveDataTable(outputFile *os.File, posContents DataTable) error {
 	buffer := new(bytes.Buffer)
-	err = binary.Write(buffer, binary.BigEndian, posContents)
-	if err != nil {
-		return err
+	if err := binary.Write(buffer, binary.BigEndian, posContents); err != nil {
+		return fmt.Errorf("encode data table: %w", err)
 	}
-	outputFile.WriteAt(buffer.Bytes(), 0)
-	return
+	if _, err := outputFile.WriteAt(buffer.Bytes(), 0); err != nil {
+		return fmt.Errorf("write data table: %w", err)
+	}
+	return nil
 }
