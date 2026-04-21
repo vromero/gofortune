@@ -2,5 +2,10 @@ bin/
 dist/
 vendor
 coverage.txt
+coverage.out
+coverage.html
 .idea/
 gofortune
+*.exe
+*.test
+*.out
