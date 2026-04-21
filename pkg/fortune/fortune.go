@@ -9,14 +9,63 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/patrickdappollonio/localized"
 	"github.com/vromero/gofortune/pkg"
 )
 
 type FortuneData struct {
 	Data     string
 	FileName string
+}
+
+type FortuneRequest struct {
+	AllMaxims, ShowCookieFile, PrintListOfFiles bool
+	LongDictumsOnly, ShortOnly, IgnoreCase      bool
+	Wait, ConsiderAllEqual, Offensive           bool
+	Match                                       string
+	LongestShort                                int
+	Paths                                       []ProbabilityPath
+	OffensivePaths                              []ProbabilityPath
+}
+
+func PrepareRequest(args []string, defaultFortunePath, defaultOffensiveFortunePath string) FortuneRequest {
+	request := FortuneRequest{}
+	if len(args) == 0 {
+		lang := localized.New()
+		_ = lang.Detect()
+		var lp, op string
+		lp = filepath.Join(defaultFortunePath, lang.Lang)
+		op = filepath.Join(defaultOffensiveFortunePath, lang.Lang)
+
+		request.Paths = []ProbabilityPath{{Path: selectExisting(defaultFortunePath, lp)}}
+		request.OffensivePaths = []ProbabilityPath{{Path: selectExisting(defaultOffensiveFortunePath, op)}}
+	} else {
+		currentPath := ProbabilityPath{}
+		for i := range args {
+			if strings.HasSuffix(args[i], "%") {
+				value, err := strconv.ParseInt(strings.TrimSuffix(args[i], "%"), 10, 64)
+				if err == nil {
+					currentPath.Percentage = float32(value)
+				}
+			} else {
+				currentPath.Path = args[i]
+				request.Paths = append(request.Paths, currentPath)
+				currentPath = ProbabilityPath{}
+			}
+		}
+	}
+	return request
+}
+
+func selectExisting(path1 string, path2 string) string {
+	if path2 == "" || !pkg.FileExists(path2) {
+		return path1
+	}
+	return path2
 }
 
 func init() {

@@ -5,27 +5,13 @@ import (
 	"os"
 	"runtime"
 
-	"math"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/patrickdappollonio/localized"
 	"github.com/spf13/cobra"
 	"github.com/vromero/gofortune/pkg"
 	"github.com/vromero/gofortune/pkg/fortune"
 )
-
-type FortuneRequest struct {
-	AllMaxims, ShowCookieFile, PrintListOfFiles bool
-	LongDictumsOnly, ShortOnly, IgnoreCase      bool
-	Wait, ConsiderAllEqual, Offensive           bool
-	Match                                       string
-	LongestShort                                int
-	Paths                                       []fortune.ProbabilityPath
-	OffensivePaths                              []fortune.ProbabilityPath
-}
 
 var (
 	defaultFortunePath          = "/usr/share/games/fortunes"
@@ -40,7 +26,8 @@ var RootCmd = &cobra.Command{
 	Short: "Print a random, hopefully interesting, adage",
 	Long:  `When fortune is run with no arguments it prints out a random epigram`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		request := FortuneRequest{}
+		request := fortune.PrepareRequest(args, defaultFortunePath, defaultOffensiveFortunePath)
+
 		allMaxims, _ := cmd.Flags().GetBool("allMaxims")
 		request.AllMaxims = allMaxims
 		offensive, _ := cmd.Flags().GetBool("offensive")
@@ -64,7 +51,6 @@ var RootCmd = &cobra.Command{
 		wait, _ := cmd.Flags().GetBool("wait")
 		request.Wait = wait
 
-		fortunePrepareRequest(args, &request)
 		return fortuneRun(request)
 	},
 
@@ -102,101 +88,7 @@ func init() {
 	RootCmd.Flags().BoolP("wait", "w", false, "Wait before termination for an amount of time calculated from the number of characters in the message")
 }
 
-func fortunePrepareRequest(args []string, request *FortuneRequest) {
-	if len(args) == 0 {
-		lang := localized.New()
-		_ = lang.Detect()
-		var lp, op string
-		lp = filepath.Join(defaultFortunePath, lang.Lang)
-		op = filepath.Join(defaultOffensiveFortunePath, lang.Lang)
-
-		request.Paths = []fortune.ProbabilityPath{{Path: selectExisting(defaultFortunePath, lp)}}
-		request.OffensivePaths = []fortune.ProbabilityPath{{Path: selectExisting(defaultOffensiveFortunePath, op)}}
-	} else {
-		currentPath := fortune.ProbabilityPath{}
-		for i := range args {
-			if strings.HasSuffix(args[i], "%") {
-				value, err := strconv.ParseInt(strings.TrimSuffix(args[i], "%"), 10, 64)
-				if err == nil {
-					currentPath.Percentage = float32(value)
-				}
-			} else {
-				currentPath.Path = args[i]
-				request.Paths = append(request.Paths, currentPath)
-				currentPath = fortune.ProbabilityPath{}
-			}
-		}
-	}
-}
-
-
-func Execute() {
-	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-func init() {
-	if runtime.GOOS == "windows" {
-		configDir, err := os.UserConfigDir()
-		if err == nil {
-			defaultFortunePath = filepath.Join(configDir, "gofortune", "fortunes")
-			defaultOffensiveFortunePath = filepath.Join(configDir, "gofortune", "fortunes", "off")
-		} else {
-			defaultFortunePath = "C:\\ProgramData\\gofortune\\fortunes"
-			defaultOffensiveFortunePath = "C:\\ProgramData\\gofortune\\fortunes\\off"
-		}
-	}
-
-	RootCmd.Flags().BoolP("allMaxims", "a", false, "Choose from all lists of maxims")
-	RootCmd.Flags().BoolP("offensive", "o", false, "Choose only from potentially offensive aphorisms")
-	RootCmd.Flags().BoolP("showCookieFile", "c", false, "Show the cookie file from which the fortune came")
-	RootCmd.Flags().BoolP("printListOfFiles", "f", false, "Print out the list of files which would be searched, but don't print a fortune")
-	RootCmd.Flags().BoolP("considerAllEqual", "e", false, "Consider all fortune files to be of equal size")
-	RootCmd.Flags().StringP("match", "m", "", "Print out all fortunes which enough regular expression pattern")
-	RootCmd.Flags().IntP("longestShort", "n", 160, "set the longest fortune length (in characters) considered to be \"short\" (the default is 160)")
-	RootCmd.Flags().BoolP("longDictumsOnly", "l", false, "Long dictums only. See -n on how \"long\" is enough")
-	RootCmd.Flags().BoolP("shortOnly", "s", false, "Short apothegms only. See -n on which fortunes are considered \"short\"")
-	RootCmd.Flags().BoolP("ignoreCase", "i", false, "Ignore case for -m patterns")
-	RootCmd.Flags().BoolP("wait", "w", false, "Wait before termination for an amount of time calculated from the number of characters in the message")
-	}
-
-func fortunePrepareRequest(args []string) {
-	if len(args) == 0 {
-		lang := localized.New()
-		_ = lang.Detect()
-		var lp, op string
-		lp = filepath.Join(defaultFortunePath, lang.Lang)
-		op = filepath.Join(defaultOffensiveFortunePath, lang.Lang)
-
-		fortuneRequest.Paths = []fortune.ProbabilityPath{{Path: selectExisting(defaultFortunePath, lp)}}
-		fortuneRequest.OffensivePaths = []fortune.ProbabilityPath{{Path: selectExisting(defaultOffensiveFortunePath, op)}}
-	} else {
-		currentPath := fortune.ProbabilityPath{}
-		for i := range args {
-			if strings.HasSuffix(args[i], "%") {
-				value, err := strconv.ParseInt(strings.TrimSuffix(args[i], "%"), 10, 64)
-				if err == nil {
-					currentPath.Percentage = float32(value)
-				}
-			} else {
-				currentPath.Path = args[i]
-				fortuneRequest.Paths = append(fortuneRequest.Paths, currentPath)
-				currentPath = fortune.ProbabilityPath{}
-			}
-		}
-	}
-}
-
-func selectExisting(path1 string, path2 string) string {
-	if path2 == "" || !pkg.FileExists(path2) {
-		return path1
-	}
-	return path2
-}
-
-func fortuneRun(request FortuneRequest) error {
+func fortuneRun(request fortune.FortuneRequest) error {
 	var input []fortune.ProbabilityPath
 	if request.AllMaxims {
 		input = append(input, request.Paths...)
@@ -208,7 +100,7 @@ func fortuneRun(request FortuneRequest) error {
 	}
 
 	var (
-		shorterThan uint32 = math.MaxUint32
+		shorterThan uint32 = 4294967295 // math.MaxUint32
 		longerThan  uint32 = 0
 	)
 	if request.ShortOnly {
@@ -241,7 +133,7 @@ func fortuneRun(request FortuneRequest) error {
 	return nil
 }
 
-func printFortuneChannels(request FortuneRequest, fortuneChannel <-chan fortune.FortuneData, errorChannel <-chan error) {
+func printFortuneChannels(request fortune.FortuneRequest, fortuneChannel <-chan fortune.FortuneData, errorChannel <-chan error) {
 	for fortuneData := range fortuneChannel {
 		printFortune(request, fortuneData, nil)
 	}
@@ -250,7 +142,7 @@ func printFortuneChannels(request FortuneRequest, fortuneChannel <-chan fortune.
 	}
 }
 
-func printFortune(request FortuneRequest, fortune fortune.FortuneData, err error) {
+func printFortune(request fortune.FortuneRequest, fortune fortune.FortuneData, err error) {
 	if err != nil {
 		fmt.Println(err)
 		return
