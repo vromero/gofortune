@@ -27,8 +27,6 @@ type FortuneRequest struct {
 	OffensivePaths                              []fortune.ProbabilityPath
 }
 
-var fortuneRequest = FortuneRequest{}
-
 var (
 	defaultFortunePath          = "/usr/share/games/fortunes"
 	defaultOffensiveFortunePath = "/usr/share/games/fortunes/off"
@@ -42,9 +40,34 @@ var RootCmd = &cobra.Command{
 	Short: "Print a random, hopefully interesting, adage",
 	Long:  `When fortune is run with no arguments it prints out a random epigram`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fortunePrepareRequest(args)
-		return fortuneRun(fortuneRequest)
+		request := FortuneRequest{}
+		allMaxims, _ := cmd.Flags().GetBool("allMaxims")
+		request.AllMaxims = allMaxims
+		offensive, _ := cmd.Flags().GetBool("offensive")
+		request.Offensive = offensive
+		showCookieFile, _ := cmd.Flags().GetBool("showCookieFile")
+		request.ShowCookieFile = showCookieFile
+		printListOfFilesFlag, _ := cmd.Flags().GetBool("printListOfFiles")
+		request.PrintListOfFiles = printListOfFilesFlag
+		considerAllEqual, _ := cmd.Flags().GetBool("considerAllEqual")
+		request.ConsiderAllEqual = considerAllEqual
+		match, _ := cmd.Flags().GetString("match")
+		request.Match = match
+		longestShort, _ := cmd.Flags().GetInt("longestShort")
+		request.LongestShort = longestShort
+		longDictumsOnly, _ := cmd.Flags().GetBool("longDictumsOnly")
+		request.LongDictumsOnly = longDictumsOnly
+		shortOnly, _ := cmd.Flags().GetBool("shortOnly")
+		request.ShortOnly = shortOnly
+		ignoreCase, _ := cmd.Flags().GetBool("ignoreCase")
+		request.IgnoreCase = ignoreCase
+		wait, _ := cmd.Flags().GetBool("wait")
+		request.Wait = wait
+
+		fortunePrepareRequest(args, &request)
+		return fortuneRun(request)
 	},
+
 }
 
 func Execute() {
@@ -66,17 +89,77 @@ func init() {
 		}
 	}
 
-	RootCmd.Flags().BoolVarP(&fortuneRequest.AllMaxims, "allMaxims", "a", false, "Choose from all lists of maxims")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.Offensive, "offensive", "o", false, "Choose only from potentially offensive aphorisms")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.ShowCookieFile, "showCookieFile", "c", false, "Show the cookie file from which the fortune came")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.PrintListOfFiles, "printListOfFiles", "f", false, "Print out the list of files which would be searched, but don't print a fortune")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.ConsiderAllEqual, "considerAllEqual", "e", false, "Consider all fortune files to be of equal size")
-	RootCmd.Flags().StringVarP(&fortuneRequest.Match, "match", "m", "", "Print out all fortunes which enough regular expression pattern")
-	RootCmd.Flags().IntVarP(&fortuneRequest.LongestShort, "longestShort", "n", 160, "set the longest fortune length (in characters) considered to be \"short\" (the default is 160)")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.LongDictumsOnly, "longDictumsOnly", "l", false, "Long dictums only. See -n on how \"long\" is enough")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.ShortOnly, "shortOnly", "s", false, "Short apothegms only. See -n on which fortunes are considered \"short\"")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.IgnoreCase, "ignoreCase", "i", false, "Ignore case for -m patterns")
-	RootCmd.Flags().BoolVarP(&fortuneRequest.Wait, "wait", "w", false, "Wait before termination for an amount of time calculated from the number of characters in the message")
+	RootCmd.Flags().BoolP("allMaxims", "a", false, "Choose from all lists of maxims")
+	RootCmd.Flags().BoolP("offensive", "o", false, "Choose only from potentially offensive aphorisms")
+	RootCmd.Flags().BoolP("showCookieFile", "c", false, "Show the cookie file from which the fortune came")
+	RootCmd.Flags().BoolP("printListOfFiles", "f", false, "Print out the list of files which would be searched, but don't print a fortune")
+	RootCmd.Flags().BoolP("considerAllEqual", "e", false, "Consider all fortune files to be of equal size")
+	RootCmd.Flags().StringP("match", "m", "", "Print out all fortunes which enough regular expression pattern")
+	RootCmd.Flags().IntP("longestShort", "n", 160, "set the longest fortune length (in characters) considered to be \"short\" (the default is 160)")
+	RootCmd.Flags().BoolP("longDictumsOnly", "l", false, "Long dictums only. See -n on how \"long\" is enough")
+	RootCmd.Flags().BoolP("shortOnly", "s", false, "Short apothegms only. See -n on which fortunes are considered \"short\"")
+	RootCmd.Flags().BoolP("ignoreCase", "i", false, "Ignore case for -m patterns")
+	RootCmd.Flags().BoolP("wait", "w", false, "Wait before termination for an amount of time calculated from the number of characters in the message")
+}
+
+func fortunePrepareRequest(args []string, request *FortuneRequest) {
+	if len(args) == 0 {
+		lang := localized.New()
+		_ = lang.Detect()
+		var lp, op string
+		lp = filepath.Join(defaultFortunePath, lang.Lang)
+		op = filepath.Join(defaultOffensiveFortunePath, lang.Lang)
+
+		request.Paths = []fortune.ProbabilityPath{{Path: selectExisting(defaultFortunePath, lp)}}
+		request.OffensivePaths = []fortune.ProbabilityPath{{Path: selectExisting(defaultOffensiveFortunePath, op)}}
+	} else {
+		currentPath := fortune.ProbabilityPath{}
+		for i := range args {
+			if strings.HasSuffix(args[i], "%") {
+				value, err := strconv.ParseInt(strings.TrimSuffix(args[i], "%"), 10, 64)
+				if err == nil {
+					currentPath.Percentage = float32(value)
+				}
+			} else {
+				currentPath.Path = args[i]
+				request.Paths = append(request.Paths, currentPath)
+				currentPath = fortune.ProbabilityPath{}
+			}
+		}
+	}
+}
+
+
+func Execute() {
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func init() {
+	if runtime.GOOS == "windows" {
+		configDir, err := os.UserConfigDir()
+		if err == nil {
+			defaultFortunePath = filepath.Join(configDir, "gofortune", "fortunes")
+			defaultOffensiveFortunePath = filepath.Join(configDir, "gofortune", "fortunes", "off")
+		} else {
+			defaultFortunePath = "C:\\ProgramData\\gofortune\\fortunes"
+			defaultOffensiveFortunePath = "C:\\ProgramData\\gofortune\\fortunes\\off"
+		}
+	}
+
+	RootCmd.Flags().BoolP("allMaxims", "a", false, "Choose from all lists of maxims")
+	RootCmd.Flags().BoolP("offensive", "o", false, "Choose only from potentially offensive aphorisms")
+	RootCmd.Flags().BoolP("showCookieFile", "c", false, "Show the cookie file from which the fortune came")
+	RootCmd.Flags().BoolP("printListOfFiles", "f", false, "Print out the list of files which would be searched, but don't print a fortune")
+	RootCmd.Flags().BoolP("considerAllEqual", "e", false, "Consider all fortune files to be of equal size")
+	RootCmd.Flags().StringP("match", "m", "", "Print out all fortunes which enough regular expression pattern")
+	RootCmd.Flags().IntP("longestShort", "n", 160, "set the longest fortune length (in characters) considered to be \"short\" (the default is 160)")
+	RootCmd.Flags().BoolP("longDictumsOnly", "l", false, "Long dictums only. See -n on how \"long\" is enough")
+	RootCmd.Flags().BoolP("shortOnly", "s", false, "Short apothegms only. See -n on which fortunes are considered \"short\"")
+	RootCmd.Flags().BoolP("ignoreCase", "i", false, "Ignore case for -m patterns")
+	RootCmd.Flags().BoolP("wait", "w", false, "Wait before termination for an amount of time calculated from the number of characters in the message")
 	}
 
 func fortunePrepareRequest(args []string) {
