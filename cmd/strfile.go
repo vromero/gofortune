@@ -43,11 +43,6 @@ func init() {
 	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.IgnoreCase, "ignoreCase", "i", false, "Ignore case when ordering the strings")
 	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Silent, "silent", "s", false, "Run silently")
 	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Order, "order", "o", false, "Order the strings in alphabetical Order")
-	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Randomize, "randomize", "n", false, "Randomize  access  to  the strings")
-	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Rot13, "rot13", "x", false, "Rotate  13  positions  in  a simple caesar cypher")
-}
-
-func strFileRun(request StrFileRequest) (err error) {
-	return strfile.StrFile(request.IgnoreCase, request.Silent, request.Order, request.Randomize, request.Rot13,
-		request.DelimitingChar, request.SourceFile, request.DataFile)
+	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Randomize, "randomize", "n", false, "Randomize access to the strings")
+	strfileCmd.Flags().BoolVarP(&strFileCmdRequest.Rot13, "rot13", "x", false, "Rotate 13 positions in a simple caesar cypher")
 }
