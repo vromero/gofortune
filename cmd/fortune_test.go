@@ -71,6 +71,15 @@ func TestPrepareRequestWithPercentage(t *testing.T) {
 	}
 }
 
+// TestPrepareRequestRejectsBadPercentage verifies that a malformed "N%" token
+// produces an error instead of being silently dropped.
+func TestPrepareRequestRejectsBadPercentage(t *testing.T) {
+	args := []string{"not-a-number%", "/a"}
+	if _, err := fortune.PrepareRequest(args, "/unused", "/unused/off"); err == nil {
+		t.Fatal("expected error for malformed percentage, got nil")
+	}
+}
+
 // TestRootCmdFlagsRegistered verifies that all user-facing flags are wired up
 // on RootCmd. Regression guard against flag-registration being dropped during
 // refactors.
@@ -84,6 +93,41 @@ func TestRootCmdFlagsRegistered(t *testing.T) {
 		if f := RootCmd.Flags().Lookup(name); f == nil {
 			t.Errorf("flag %q is not registered on RootCmd", name)
 		}
+	}
+}
+
+// TestRootFlagsBindIntoStruct verifies that parsing flags actually mutates
+// the bound rootFlags struct (regression guard for the VarP binding
+// refactor). Uses the flag set directly to avoid triggering RunE.
+func TestRootFlagsBindIntoStruct(t *testing.T) {
+	// Snapshot and restore to avoid leaking state into other tests.
+	saved := rootFlags
+	t.Cleanup(func() { rootFlags = saved })
+
+	if err := RootCmd.Flags().Parse([]string{
+		"--allMaxims", "--offensive", "--match", "hello",
+		"--longestShort", "42", "--ignoreCase", "--wait",
+	}); err != nil {
+		t.Fatalf("flag parse failed: %v", err)
+	}
+
+	if !rootFlags.AllMaxims {
+		t.Error("AllMaxims not bound")
+	}
+	if !rootFlags.Offensive {
+		t.Error("Offensive not bound")
+	}
+	if rootFlags.Match != "hello" {
+		t.Errorf("Match: expected %q, got %q", "hello", rootFlags.Match)
+	}
+	if rootFlags.LongestShort != 42 {
+		t.Errorf("LongestShort: expected 42, got %d", rootFlags.LongestShort)
+	}
+	if !rootFlags.IgnoreCase {
+		t.Error("IgnoreCase not bound")
+	}
+	if !rootFlags.Wait {
+		t.Error("Wait not bound")
 	}
 }
 

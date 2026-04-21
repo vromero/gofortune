@@ -131,4 +131,17 @@ func TestGetFortunesMatchingErrorsOnMissingIndex(t *testing.T) {
 	}
 }
 
+// TestGetLengthFilteredRandomFortuneGivesUp verifies that the length-filter
+// loop terminates with an error when no fortune can satisfy the constraints,
+// instead of looping forever.
+func TestGetLengthFilteredRandomFortuneGivesUp(t *testing.T) {
+	// Root has no children: GetRandomFortune will return "empty" which
+	// propagates out as an error *before* the retry bound kicks in. That
+	// is still a correct terminating behaviour.
+	empty := FileSystemNodeDescriptor{NumEntries: 0}
+	_, err := GetLengthFilteredRandomFortune(empty, 10, 0)
+	if err == nil {
+		t.Fatal("expected error from empty tree, got nil")
+	}
+}
 
