@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/patrickdappollonio/localized"
 	"github.com/vromero/gofortune/pkg"
@@ -66,10 +65,6 @@ func selectExisting(path1 string, path2 string) string {
 		return path1
 	}
 	return path2
-}
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 func GetRandomFortune(rootNode FileSystemNodeDescriptor) (FortuneData, error) {
@@ -134,6 +129,9 @@ func getFortunesMatching(fsDescriptor FileSystemNodeDescriptor, expression *rege
 	errorOutput := make(chan error)
 
 	go func() {
+		defer close(output)
+		defer close(errorOutput)
+
 		if len(fsDescriptor.Children) > 0 {
 			for i := range fsDescriptor.Children {
 
@@ -147,33 +145,39 @@ func getFortunesMatching(fsDescriptor FileSystemNodeDescriptor, expression *rege
 					errorOutput <- errorResult
 				}
 			}
-		} else {
-			indexFile, err := os.Open(fsDescriptor.IndexPath)
-			defer indexFile.Close()
+			return
+		}
+
+		indexFile, err := os.Open(fsDescriptor.IndexPath)
+		if err != nil {
+			errorOutput <- errors.New("can't open index file")
+			return
+		}
+		defer indexFile.Close()
+
+		fortuneFile, err := os.Open(fsDescriptor.Path)
+		if err != nil {
+			errorOutput <- errors.New("can't read fortune file")
+			return
+		}
+		defer fortuneFile.Close()
+
+		for i := int64(0); i < int64(fsDescriptor.NumEntries); i++ {
+			dataPos, err := pkg.ReadDataPos(indexFile, int(pkg.DataTableSize), uint32(i))
 			if err != nil {
-				errorOutput <- errors.New("can't open index file")
+				errorOutput <- fmt.Errorf("can't read from index file, fortune number : %v", i)
+				continue
 			}
 
-			fortuneFile, err := os.Open(fsDescriptor.Path)
-			defer fortuneFile.Close()
+			data, err := pkg.ReadData(fortuneFile, int64(dataPos.OriginalOffset))
 			if err != nil {
-				errorOutput <- errors.New("can't read fortune file")
+				errorOutput <- fmt.Errorf("can't read from fortune file, fortune number : %v", i)
+				continue
 			}
-
-			for i := int64(0); i < int64(fsDescriptor.NumEntries); i++ {
-				dataPos, err := pkg.ReadDataPos(indexFile, int(pkg.DataTableSize), uint32(i))
-				if err != nil {
-					errorOutput <- errors.New(fmt.Sprintf("can't read from index file, fortune number : %v", i))
-				}
-
-				data, err := pkg.ReadData(fortuneFile, int64(dataPos.OriginalOffset))
-				if expression.MatchString(data) {
-					output <- FortuneData{FileName: filepath.Base(fsDescriptor.Path), Data: data}
-				}
+			if expression.MatchString(data) {
+				output <- FortuneData{FileName: filepath.Base(fsDescriptor.Path), Data: data}
 			}
 		}
-		close(output)
-		close(errorOutput)
 	}()
 
 	return output, errorOutput

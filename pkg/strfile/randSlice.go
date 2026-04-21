@@ -2,14 +2,9 @@ package strfile
 
 import (
 	"math/rand"
-	"time"
 
 	"github.com/vromero/gofortune/pkg"
 )
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
 
 func Shuffle(input []pkg.DataPos) {
 	for i := range input {

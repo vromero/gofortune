@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"math"
 	"os"
-	"runtime"
-
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -97,7 +97,7 @@ func fortuneRun(request fortune.FortuneRequest) error {
 	}
 
 	var (
-		shorterThan uint32 = 4294967295 // math.MaxUint32
+		shorterThan uint32 = math.MaxUint32
 		longerThan  uint32 = 0
 	)
 	if request.ShortOnly {
@@ -115,14 +115,14 @@ func fortuneRun(request fortune.FortuneRequest) error {
 	if request.Match != "" {
 		matchedFortunesChannel, errorChannel := fortune.GetFortunesMatching(rootFsDescriptor, request.Match, request.IgnoreCase)
 		printFortuneChannels(request, matchedFortunesChannel, errorChannel)
-		os.Exit(0)
+		return nil
 	}
 
 	fortune.SetProbabilities(&rootFsDescriptor, request.ConsiderAllEqual)
 
 	if request.PrintListOfFiles {
 		printListOfFiles(rootFsDescriptor)
-		os.Exit(0)
+		return nil
 	}
 
 	output, errorOutput := fortune.GetLengthFilteredRandomFortune(rootFsDescriptor, shorterThan, longerThan)
