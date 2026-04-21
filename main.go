@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -9,7 +10,10 @@ import (
 
 func main() {
 	processAliases()
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 
 // To maintain compatibility with the classic tools: fortune, strfile. GoFortune supports to have its

@@ -60,13 +60,7 @@ func Execute() error {
 	return RootCmd.Execute()
 }
 
-func main() {
-	if err := Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
+func init() {
 	if runtime.GOOS == "windows" {
 		configDir, err := os.UserConfigDir()
 		if err == nil {
