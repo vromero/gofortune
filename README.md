@@ -25,7 +25,22 @@ go install github.com/vromero/gofortune@latest
 ### Fortune
 Print a random adage:
 ```bash
-gofortune fortune
+gofortune
+```
+
+Useful flags:
+- `-s` short fortunes only, `-l` long only, `-n N` threshold (default 160)
+- `-m PATTERN` print all fortunes matching a regular expression, `-i` case-insensitive
+- `-o` pick from offensive fortunes only, `-a` all maxims
+- `-c` show the cookie file a fortune came from
+- `-f` print the list of candidate files and their probabilities
+- `-e` weight every file equally regardless of size
+- `-w` pause after printing, scaling with the length of the fortune
+
+Provide one or more paths (optionally preceded by `N%` to weight them) to
+override the default `/usr/share/games/fortunes` location:
+```bash
+gofortune 30% /path/to/my/fortunes 70% /path/to/other/fortunes
 ```
 
 ### Strfile
@@ -36,7 +51,7 @@ gofortune strfile <source_file> [data_file]
 
 Example:
 ```bash
-# Create an index from fortunes.txt and save it as fortunes.dat
+# Create an index from fortunes.txt and save it as fortunes.txt.dat
 gofortune strfile fortunes.txt
 ```
 
