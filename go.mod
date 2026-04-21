@@ -3,8 +3,6 @@ module github.com/vromero/gofortune
 go 1.26.2
 
 require (
-	github.com/Masterminds/vcs v1.13.3
-	github.com/mitchellh/go-homedir v1.1.0
 	github.com/patrickdappollonio/localized v0.0.0-20170307163927-f0888e3caa61
 	github.com/spf13/cobra v1.10.2
 )
