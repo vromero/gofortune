@@ -40,14 +40,6 @@ Example:
 gofortune strfile fortunes.txt
 ```
 
-### Get
-
-Download and install a fortune cookie collection from a GitHub repository. The repository should contain text files where each fortune is separated by a percent sign (`%`).
-
-```bash
-gofortune get <repository_url>
-```
-
 ## I18n (Internationalization)
 
 GoFortune supports multiple languages. When the `LANG` environment variable is set, the tool will attempt to find fortunes in the corresponding directory (e.g., `/usr/share/games/fortunes/es`).
