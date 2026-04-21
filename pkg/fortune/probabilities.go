@@ -2,25 +2,24 @@ package fortune
 
 import (
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 )
 
-
+// GetRandomLeafNode walks the descriptor tree, choosing a child at each level
+// weighted by its Percent, until it reaches a leaf which it returns.
 func GetRandomLeafNode(fsDescriptor FileSystemNodeDescriptor) (FileSystemNodeDescriptor, error) {
-	if len(fsDescriptor.Children) > 0 {
-		r := rand.Float32() * fsDescriptor.Percent
-		var cumulativeProbability float32
-
-		for i := range fsDescriptor.Children {
-			cumulativeProbability += fsDescriptor.Children[i].Percent
-			if r <= cumulativeProbability {
-				return GetRandomLeafNode(fsDescriptor.Children[i])
-			}
-		}
-		return FileSystemNodeDescriptor{}, errors.New("no branch was randomly selected")
-	} else {
+	if len(fsDescriptor.Children) == 0 {
 		return fsDescriptor, nil
 	}
+	r := rand.Float32() * fsDescriptor.Percent
+	var cumulativeProbability float32
+	for i := range fsDescriptor.Children {
+		cumulativeProbability += fsDescriptor.Children[i].Percent
+		if r <= cumulativeProbability {
+			return GetRandomLeafNode(fsDescriptor.Children[i])
+		}
+	}
+	return FileSystemNodeDescriptor{}, errors.New("no branch was randomly selected")
 }
 
 // SetProbabilities calculates percentage of possibility of being randomly chosen

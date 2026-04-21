@@ -26,7 +26,10 @@ var RootCmd = &cobra.Command{
 	Short: "Print a random, hopefully interesting, adage",
 	Long:  `When fortune is run with no arguments it prints out a random epigram`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		request := fortune.PrepareRequest(args, defaultFortunePath, defaultOffensiveFortunePath)
+		request, err := fortune.PrepareRequest(args, defaultFortunePath, defaultOffensiveFortunePath)
+		if err != nil {
+			return err
+		}
 
 		allMaxims, _ := cmd.Flags().GetBool("allMaxims")
 		request.AllMaxims = allMaxims
@@ -85,7 +88,7 @@ func init() {
 	RootCmd.Flags().BoolP("wait", "w", false, "Wait before termination for an amount of time calculated from the number of characters in the message")
 }
 
-func fortuneRun(request fortune.FortuneRequest) error {
+func fortuneRun(request fortune.Request) error {
 	var input []fortune.ProbabilityPath
 	if request.AllMaxims {
 		input = append(input, request.Paths...)
@@ -125,31 +128,48 @@ func fortuneRun(request fortune.FortuneRequest) error {
 		return nil
 	}
 
-	output, errorOutput := fortune.GetLengthFilteredRandomFortune(rootFsDescriptor, shorterThan, longerThan)
-	printFortune(request, output, errorOutput)
+	output, err := fortune.GetLengthFilteredRandomFortune(rootFsDescriptor, shorterThan, longerThan)
+	if err != nil {
+		return err
+	}
+	printFortune(request, output, nil)
 	return nil
 }
 
-func printFortuneChannels(request fortune.FortuneRequest, fortuneChannel <-chan fortune.FortuneData, errorChannel <-chan error) {
-	for fortuneData := range fortuneChannel {
-		printFortune(request, fortuneData, nil)
-	}
-	for errorData := range errorChannel {
-		printFortune(request, fortune.FortuneData{}, errorData)
+// printFortuneChannels drains both the fortune and error channels
+// concurrently using a single select loop. Draining them sequentially would
+// risk deadlocking the producer if it blocks trying to send on a channel
+// whose consumer hasn't started reading yet.
+func printFortuneChannels(request fortune.Request, fortuneChannel <-chan fortune.Cookie, errorChannel <-chan error) {
+	for fortuneChannel != nil || errorChannel != nil {
+		select {
+		case cookie, ok := <-fortuneChannel:
+			if !ok {
+				fortuneChannel = nil
+				continue
+			}
+			printFortune(request, cookie, nil)
+		case err, ok := <-errorChannel:
+			if !ok {
+				errorChannel = nil
+				continue
+			}
+			printFortune(request, fortune.Cookie{}, err)
+		}
 	}
 }
 
-func printFortune(request fortune.FortuneRequest, fortune fortune.FortuneData, err error) {
+func printFortune(request fortune.Request, cookie fortune.Cookie, err error) {
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		return
 	}
 	if request.ShowCookieFile {
-		fmt.Printf("(%s)\n%%\n", fortune.FileName)
+		fmt.Printf("(%s)\n%%\n", cookie.FileName)
 	}
-	fmt.Println(string(fortune.Data))
+	fmt.Println(cookie.Data)
 	if request.Wait {
-		readTimeWait(len(fortune.Data))
+		readTimeWait(len(cookie.Data))
 	}
 }
 

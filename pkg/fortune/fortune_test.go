@@ -93,6 +93,9 @@ func TestSetProbabilitiesWeightedDistributes(t *testing.T) {
 // TestGetFortunesMatchingErrorsOnMissingIndex: a leaf node pointing at a
 // non-existent index file should surface an error on the error channel
 // and not panic (regression guard for the old nil-Close panic).
+//
+// Both channels must be drained concurrently because the producer does not
+// buffer; draining one fully before the other can deadlock.
 func TestGetFortunesMatchingErrorsOnMissingIndex(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "nope")
 	leaf := FileSystemNodeDescriptor{
@@ -104,21 +107,28 @@ func TestGetFortunesMatchingErrorsOnMissingIndex(t *testing.T) {
 	dataCh, errCh := getFortunesMatching(leaf, regexp.MustCompile(".*"))
 
 	gotErr := false
-	for err := range errCh {
-		if err == nil {
-			continue
+	for dataCh != nil || errCh != nil {
+		select {
+		case _, ok := <-dataCh:
+			if !ok {
+				dataCh = nil
+				continue
+			}
+			t.Error("did not expect any fortune data")
+		case err, ok := <-errCh:
+			if !ok {
+				errCh = nil
+				continue
+			}
+			if !strings.Contains(err.Error(), "index") {
+				t.Errorf("expected error mentioning 'index', got %q", err.Error())
+			}
+			gotErr = true
 		}
-		if !strings.Contains(err.Error(), "index") {
-			t.Errorf("expected error mentioning 'index', got %q", err.Error())
-		}
-		gotErr = true
-	}
-	// Drain data channel (must already be closed).
-	for range dataCh {
-		t.Error("did not expect any fortune data")
 	}
 	if !gotErr {
 		t.Error("expected at least one error on error channel")
 	}
 }
+
 

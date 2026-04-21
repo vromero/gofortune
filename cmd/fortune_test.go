@@ -18,7 +18,10 @@ func TestPrepareRequestNoArgs(t *testing.T) {
 		t.Fatalf("failed to create fortune dirs: %v", err)
 	}
 
-	req := fortune.PrepareRequest(nil, fortuneDir, offDir)
+	req, err := fortune.PrepareRequest(nil, fortuneDir, offDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if len(req.Paths) != 1 || req.Paths[0].Path != fortuneDir {
 		t.Fatalf("expected default fortune path %q, got %+v", fortuneDir, req.Paths)
@@ -32,7 +35,10 @@ func TestPrepareRequestNoArgs(t *testing.T) {
 // captured as a ProbabilityPath with the expected Path value.
 func TestPrepareRequestWithPath(t *testing.T) {
 	args := []string{"/tmp/some/fortunes"}
-	req := fortune.PrepareRequest(args, "/unused", "/unused/off")
+	req, err := fortune.PrepareRequest(args, "/unused", "/unused/off")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if len(req.Paths) != 1 {
 		t.Fatalf("expected one path, got %d", len(req.Paths))
@@ -49,7 +55,10 @@ func TestPrepareRequestWithPath(t *testing.T) {
 // path sets that path's Percentage.
 func TestPrepareRequestWithPercentage(t *testing.T) {
 	args := []string{"30%", "/a", "70%", "/b"}
-	req := fortune.PrepareRequest(args, "/unused", "/unused/off")
+	req, err := fortune.PrepareRequest(args, "/unused", "/unused/off")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if len(req.Paths) != 2 {
 		t.Fatalf("expected two paths, got %d", len(req.Paths))
@@ -81,7 +90,7 @@ func TestRootCmdFlagsRegistered(t *testing.T) {
 // TestFortuneRunRejectsMissingPath verifies that fortuneRun surfaces an error
 // when asked to load a path that doesn't exist, instead of panicking.
 func TestFortuneRunRejectsMissingPath(t *testing.T) {
-	req := fortune.FortuneRequest{
+	req := fortune.Request{
 		Paths:        []fortune.ProbabilityPath{{Path: filepath.Join(t.TempDir(), "does-not-exist")}},
 		LongestShort: 160,
 	}
