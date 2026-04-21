@@ -34,7 +34,6 @@ type FileSystemNodeDescriptor struct {
 	Path                     string
 	IndexPath                string
 	Table                    pkg.DataTable
-	isUtf8                   bool
 	Children                 []FileSystemNodeDescriptor
 	Parent                   *FileSystemNodeDescriptor
 }
